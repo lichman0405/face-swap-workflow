@@ -6,7 +6,7 @@ Download all model weights required by InstantID face transfer.
 Models downloaded:
   1. InstantID ControlNetModel  → ./checkpoints/ControlNetModel/
   2. InstantID ip-adapter.bin   → ./checkpoints/ip-adapter.bin
-  3. antelopev2 face encoder    → ./models/antelopev2/   (manual, see note)
+  3. antelopev2 face encoder    → ./models/antelopev2/   (auto, with manual fallback)
 
 The SDXL base model (wangqixun/YamerMIX_v8, ~6 GB) will be downloaded
 automatically the first time you run infer.py via the HuggingFace cache.
@@ -19,6 +19,8 @@ Usage:
 import argparse
 import os
 import sys
+import urllib.request
+import zipfile
 
 from huggingface_hub import hf_hub_download
 
@@ -72,12 +74,20 @@ def download_instantid_checkpoints(local_dir: str) -> None:
         ok(f"Saved → {dest}")
 
 
-# ── Manual download note ───────────────────────────────────────────────────────
-ANTELOPEV2_NOTE = f"""
+# ── antelopev2 auto-download ───────────────────────────────────────────────────
+
+ANTELOPEV2_URL = "http://storage.insightface.ai/files/models/antelopev2.zip"
+ANTELOPEV2_EXPECTED_FILES = {
+    "1k3d68.onnx",
+    "2d106det.onnx",
+    "genderage.onnx",
+    "glintr100.onnx",
+    "scrfd_10g_bnkps.onnx",
+}
+ANTELOPEV2_MANUAL_NOTE = f"""
 {BOLD}{YELLOW}  Manual download required — antelopev2{RESET}
 
-  The InsightFace antelopev2 model cannot be downloaded automatically.
-  Please follow these steps:
+  The InsightFace server is currently unreachable. Please download manually:
 
   1. Open the link below in your browser:
      https://github.com/deepinsight/insightface/issues/1896#issuecomment-1023867304
@@ -87,14 +97,79 @@ ANTELOPEV2_NOTE = f"""
   3. Extract it into:
      {os.path.abspath('models/antelopev2/')}
 
-  Expected structure after extraction:
-     models/antelopev2/
-     ├── 1k3d68.onnx
-     ├── 2d106det.onnx
-     ├── genderage.onnx
-     ├── glintr100.onnx
-     └── scrfd_10g_bnkps.onnx
+  Expected files after extraction:
+     models/antelopev2/1k3d68.onnx
+     models/antelopev2/2d106det.onnx
+     models/antelopev2/genderage.onnx
+     models/antelopev2/glintr100.onnx
+     models/antelopev2/scrfd_10g_bnkps.onnx
 """
+
+
+def _progress_hook(block_num: int, block_size: int, total_size: int) -> None:
+    downloaded = block_num * block_size
+    if total_size > 0:
+        pct = min(downloaded / total_size * 100, 100)
+        bar = "#" * int(pct / 2)
+        print(f"\r  [{bar:<50}] {pct:5.1f}%", end="", flush=True)
+
+
+def download_antelopev2(dest_dir: str) -> bool:
+    """
+    Try to auto-download antelopev2.zip from the InsightFace official server.
+    Returns True on success, False on failure.
+    """
+    os.makedirs(dest_dir, exist_ok=True)
+
+    # Check if all files are already present
+    existing = {f for f in os.listdir(dest_dir)} if os.path.isdir(dest_dir) else set()
+    if ANTELOPEV2_EXPECTED_FILES.issubset(existing):
+        ok("antelopev2 models already present, skipping download.")
+        return True
+
+    zip_path = os.path.join(dest_dir, "_antelopev2.zip")
+    info(f"Downloading antelopev2 from InsightFace server …")
+    info(f"URL: {ANTELOPEV2_URL}")
+
+    try:
+        urllib.request.urlretrieve(ANTELOPEV2_URL, zip_path, reporthook=_progress_hook)
+        print()  # newline after progress bar
+    except Exception as exc:
+        print()
+        err(f"Download failed: {exc}")
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+        return False
+
+    # Verify zip is valid and extract
+    info("Extracting antelopev2.zip …")
+    try:
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            # The zip may contain a top-level folder; extract contents flat
+            for member in zf.namelist():
+                filename = os.path.basename(member)
+                if not filename:
+                    continue
+                target = os.path.join(dest_dir, filename)
+                with zf.open(member) as src, open(target, "wb") as dst:
+                    dst.write(src.read())
+    except zipfile.BadZipFile as exc:
+        err(f"Invalid zip file: {exc}")
+        os.remove(zip_path)
+        return False
+    finally:
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+
+    # Verify expected files are present
+    extracted = set(os.listdir(dest_dir))
+    missing = ANTELOPEV2_EXPECTED_FILES - extracted
+    if missing:
+        err(f"Missing files after extraction: {missing}")
+        return False
+
+    ok("antelopev2 extracted successfully.")
+    return True
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -121,13 +196,12 @@ def main() -> None:
     section("Step 1 / 2  —  InstantID ControlNet + IP-Adapter")
     download_instantid_checkpoints(args.checkpoints_dir)
 
-    # ── Step 2: antelopev2 (manual) ───────────────────────────────────────────
-    section("Step 2 / 2  —  antelopev2 Face Encoder (manual)")
+    # ── Step 2: antelopev2 ────────────────────────────────────────────────────
+    section("Step 2 / 2  —  antelopev2 Face Encoder")
     antelopev2_dir = os.path.join("models", "antelopev2")
-    if os.path.isdir(antelopev2_dir) and len(os.listdir(antelopev2_dir)) >= 5:
-        ok("antelopev2 models already present.")
-    else:
-        print(ANTELOPEV2_NOTE)
+    success = download_antelopev2(antelopev2_dir)
+    if not success:
+        print(ANTELOPEV2_MANUAL_NOTE)
 
     # ── Done ──────────────────────────────────────────────────────────────────
     section("Done")

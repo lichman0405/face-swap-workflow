@@ -138,16 +138,15 @@ Downloads to:
 - `checkpoints/ControlNetModel/` — InstantID ControlNet (~2.5 GB)
 - `checkpoints/ip-adapter.bin` — InstantID IP-Adapter (~1.1 GB)
 
-### Manual (antelopev2 face encoder)
+### antelopev2 face encoder
 
-InsightFace licensing restricts automatic distribution. Download manually:
+`download_models.py` automatically downloads `antelopev2.zip` from the InsightFace official server (`storage.insightface.ai`) and extracts the 5 ONNX files into `models/antelopev2/`.
+
+If the server is unreachable (it occasionally goes down), the script will print manual instructions as a fallback:
 
 1. Open: <https://github.com/deepinsight/insightface/issues/1896#issuecomment-1023867304>
 2. Download `antelopev2.zip`
-3. Extract to `models/antelopev2/`:
-   ```bash
-   unzip antelopev2.zip -d models/antelopev2/
-   ```
+3. Extract to `models/antelopev2/`
 
 ### SDXL Base Model
 
