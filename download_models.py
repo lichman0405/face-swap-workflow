@@ -76,7 +76,7 @@ def download_instantid_checkpoints(local_dir: str) -> None:
 
 # ── antelopev2 auto-download ───────────────────────────────────────────────────
 
-ANTELOPEV2_URL = "http://storage.insightface.ai/files/models/antelopev2.zip"
+ANTELOPEV2_URL = "https://github.com/deepinsight/insightface/releases/download/v0.7/antelopev2.zip"
 ANTELOPEV2_EXPECTED_FILES = {
     "1k3d68.onnx",
     "2d106det.onnx",
@@ -90,7 +90,7 @@ ANTELOPEV2_MANUAL_NOTE = f"""
   The InsightFace server is currently unreachable. Please download manually:
 
   1. Open the link below in your browser:
-     https://github.com/deepinsight/insightface/issues/1896#issuecomment-1023867304
+     https://github.com/deepinsight/insightface/releases/download/v0.7/antelopev2.zip
 
   2. Download the file:  antelopev2.zip
 
@@ -136,7 +136,7 @@ def download_antelopev2(dest_dir: str) -> bool:
         print()  # newline after progress bar
     except Exception as exc:
         print()
-        err(f"Download failed: {exc}")
+        info(f"Download failed: {exc}")
         if os.path.exists(zip_path):
             os.remove(zip_path)
         return False
@@ -154,7 +154,7 @@ def download_antelopev2(dest_dir: str) -> bool:
                 with zf.open(member) as src, open(target, "wb") as dst:
                     dst.write(src.read())
     except zipfile.BadZipFile as exc:
-        err(f"Invalid zip file: {exc}")
+        info(f"Invalid zip file: {exc}")
         os.remove(zip_path)
         return False
     finally:
@@ -165,7 +165,7 @@ def download_antelopev2(dest_dir: str) -> bool:
     extracted = set(os.listdir(dest_dir))
     missing = ANTELOPEV2_EXPECTED_FILES - extracted
     if missing:
-        err(f"Missing files after extraction: {missing}")
+        info(f"Missing files after extraction: {missing}")
         return False
 
     ok("antelopev2 extracted successfully.")
