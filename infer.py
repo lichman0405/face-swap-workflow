@@ -172,7 +172,6 @@ def build_pipeline(device: torch.device, dtype: torch.dtype):
         BASE_MODEL_ID,
         controlnet=controlnet,
         torch_dtype=dtype,
-        variant="fp16" if dtype == torch.float16 else None,
     )
 
     print(f"  Moving pipeline to device: {device} …")
