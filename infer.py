@@ -53,17 +53,13 @@ from pipeline_stable_diffusion_xl_instantid_img2img import (
 
 
 # ── Default prompts ────────────────────────────────────────────────────────────
-# Tuned for Korean traditional illustration style (hanbok, ink wash, pencil sketch).
-# Override via --prompt if your target has a different art style.
-DEFAULT_PROMPT = (
-    "Korean traditional illustration, hanbok, pencil sketch, soft watercolor wash, "
-    "delicate colored pencil, fine line art, ink drawing, "
-    "detailed facial features, elegant portrait, high quality, masterpiece"
-)
+# Goal: pure face swap — preserve target style, only replace the face identity.
+# Keeping the prompt minimal/neutral prevents SDXL from overriding target's style.
+# Override via --prompt if you want to add style keywords.
+DEFAULT_PROMPT = "portrait, high quality, detailed face"
 DEFAULT_NEGATIVE_PROMPT = (
     "ugly, deformed, noisy, blurry, low quality, bad anatomy, "
-    "photorealistic, 3d render, western style, modern clothing, "
-    "extra limbs, duplicate faces"
+    "extra limbs, duplicate faces, watermark, text"
 )
 
 # ── Model paths ───────────────────────────────────────────────────────────────
@@ -132,8 +128,8 @@ def insightface_providers(device: torch.device) -> list:
             if "CUDAExecutionProvider" in available:
                 return ["CUDAExecutionProvider", "CPUExecutionProvider"]
             else:
-                info(
-                    "onnxruntime-gpu not found — InsightFace will use CPU. "
+                print(
+                    "  → onnxruntime-gpu not found — InsightFace will use CPU. "
                     "To enable GPU: pip uninstall onnxruntime -y && pip install onnxruntime-gpu"
                 )
         except ImportError:
@@ -272,19 +268,18 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--strength",
         type=float,
-        default=0.75,
+        default=0.45,
         help=(
             "img2img denoising strength [0.0–1.0]. "
-            "Lower = more of the original sketch is preserved. "
+            "Lower = more of the target style/composition is preserved. "
             "Higher = more freedom for face identity injection. "
-            "Use 0.50–0.65 when the face is large in the target; "
-            "0.70–0.85 when the face is small or side-facing."
+            "Recommended range for face swap: 0.35–0.55."
         ),
     )
     p.add_argument(
         "--ip-scale",
         type=float,
-        default=0.80,
+        default=0.85,
         help=(
             "IP-Adapter face identity weight [0.0–1.0]. "
             "Higher = stronger face resemblance to source. "
@@ -298,7 +293,7 @@ def parse_args() -> argparse.Namespace:
         help="ControlNet (face keypoints) conditioning scale [0.0–1.0].",
     )
     p.add_argument("--steps", type=int, default=30, help="Number of denoising steps.")
-    p.add_argument("--guidance-scale", type=float, default=5.0, help="Classifier-free guidance scale.")
+    p.add_argument("--guidance-scale", type=float, default=3.0, help="Classifier-free guidance scale. Lower = less text influence, more image-driven.")
     p.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility.")
     p.add_argument("--prompt", default=DEFAULT_PROMPT, help="Text prompt describing the desired output style.")
     p.add_argument("--negative-prompt", default=DEFAULT_NEGATIVE_PROMPT, help="Negative text prompt.")
