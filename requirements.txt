@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# InstantID Face Transfer — Python 3.10
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# PyTorch — installed SEPARATELY before this file (see README.md):
+#
+#   Apple Silicon (MPS):
+#     pip install torch torchvision torchaudio
+#
+#   NVIDIA CUDA 12.x:
+#     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Diffusion & model hub
+diffusers>=0.27.0
+transformers>=4.38.0
+accelerate>=0.27.0
+huggingface_hub>=0.21.0
+safetensors>=0.4.2
+
+# Face analysis (InsightFace runs on CPU regardless of MPS/CUDA)
+insightface>=0.7.3
+onnxruntime>=1.17.0
+
+# Image processing
+opencv-python>=4.9.0
+Pillow>=10.2.0
+
+# Utilities
+numpy>=1.24.0
+tqdm>=4.66.0

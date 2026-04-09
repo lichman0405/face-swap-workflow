@@ -1,0 +1,51 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Model weights & checkpoints ───────────────────────────────────────────────
+# Large binary files — download via download_models.py
+checkpoints/
+models/
+
+# ── HuggingFace cache ─────────────────────────────────────────────────────────
+.cache/
+
+# ── Inference I/O ─────────────────────────────────────────────────────────────
+source/*
+target/*
+output/*
+# Keep the directories themselves
+!source/.gitkeep
+!target/.gitkeep
+!output/.gitkeep
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editors ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Logs & temp ──────────────────────────────────────────────────────────────
+*.log
+*.tmp
