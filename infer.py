@@ -121,11 +121,23 @@ def insightface_providers(device: torch.device) -> list:
     """
     InsightFace ONNX runtime execution providers.
 
-    CUDA → CUDAExecutionProvider (GPU acceleration)
-    MPS / CPU → CPUExecutionProvider (InsightFace has no MPS backend)
+    Auto-detects available onnxruntime providers at runtime:
+      - If onnxruntime-gpu is installed and device is cuda → CUDAExecutionProvider
+      - Otherwise falls back to CPUExecutionProvider silently with a hint message
     """
     if device.type == "cuda":
-        return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        try:
+            import onnxruntime as ort
+            available = ort.get_available_providers()
+            if "CUDAExecutionProvider" in available:
+                return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+            else:
+                info(
+                    "onnxruntime-gpu not found — InsightFace will use CPU. "
+                    "To enable GPU: pip uninstall onnxruntime -y && pip install onnxruntime-gpu"
+                )
+        except ImportError:
+            pass
     return ["CPUExecutionProvider"]
 
 
